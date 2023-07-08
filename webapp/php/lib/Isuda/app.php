@@ -37,13 +37,15 @@ $container = new class extends \Slim\Container {
         ));
     }
 
-    public function htmlify($content) {
+    public function htmlify($content, $keywords = null) {
         if (!isset($content)) {
             return '';
         }
-        $keywords = $this->dbh->select_all(
-            'SELECT * FROM entry ORDER BY CHARACTER_LENGTH(keyword) DESC'
-        );
+        if (empty($keywords)) {
+            $keywords = $this->dbh->select_all(
+                'SELECT * FROM entry ORDER BY CHARACTER_LENGTH(keyword) DESC'
+            );
+        }
         $kw2sha = [];
 
         // NOTE: avoid pcre limitation "regular expression is too large at offset"
@@ -133,8 +135,18 @@ $app->get('/', function (Request $req, Response $c) {
         "LIMIT $PER_PAGE ".
         "OFFSET $offset"
     );
+    $keywords = $this->dbh->select_all(
+        'SELECT * FROM entry ORDER BY CHARACTER_LENGTH(keyword) DESC'
+    );
+//    $stars = $this->dbh->select_all(
+//        'SELECT * FROM `isutar`.star WHERE keyword in (' . implode(',', array_column($entries, 'keyword')) . ')'
+//    );
+//    $starsGroupByKeyword = [];
+//    foreach ($stars as $star) {
+//        $starsGroupByKeyword[$star['keyword']][] = $star;
+//    }
     foreach ($entries as &$entry) {
-        $entry['html']  = $this->htmlify($entry['description']);
+        $entry['html']  = $this->htmlify($entry['description'], $keywords);
         $entry['stars'] = $this->load_stars($entry['keyword']);
     }
     unset($entry);
