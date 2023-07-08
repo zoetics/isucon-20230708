@@ -149,6 +149,8 @@ $app->get('/', function (Request $req, Response $c) {
         $entry['html']  = $this->htmlify($entry['description'], $keywords);
         $entry['stars'] = $this->load_stars($entry['keyword']);
     }
+    var_dump($entries['stars']);
+
     unset($entry);
 
     $total_entries = $this->dbh->select_one(
