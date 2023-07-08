@@ -48,7 +48,7 @@ $container = new class extends \Slim\Container
         }
         if (empty($keywords)) {
             $keywords = $this->dbh->select_all(
-                'SELECT * FROM entry ORDER BY CHARACTER_LENGTH(keyword) DESC'
+                'SELECT id, author_id, keyword, description, updated_at, created_at FROM entry ORDER BY CHARACTER_LENGTH(keyword) DESC'
             );
         }
         $kw2sha = [];
@@ -139,7 +139,7 @@ $app->get('/', function (Request $req, Response $c) {
 
     $offset = $PER_PAGE * ($page - 1);
     $entries = $this->dbh->select_all(
-        'SELECT * FROM entry ' .
+        'SELECT id, author_id, keyword, description, updated_at, created_at FROM entry ' .
             'ORDER BY updated_at DESC ' .
             "LIMIT $PER_PAGE " .
             "OFFSET $offset"
