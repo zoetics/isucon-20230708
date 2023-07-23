@@ -54,7 +54,7 @@ $container = new class extends \Slim\Container
         $kw2sha = [];
         foreach ($keywords as $keyword) {
             $kw = $keyword['keyword'];
-            if (strpos( $content, $kw ) === false) {
+            if (strpos($content, $kw) === false) {
                 continue;
             }
             $kw2sha[$kw] = 'isuda_' . sha1($kw);
@@ -74,7 +74,7 @@ $container = new class extends \Slim\Container
     {
         foreach ($keywords as $keyword) {
             $kw = $keyword['keyword'];
-            if (strpos( $content, $kw ) === false) {
+            if (strpos($content, $kw) === false) {
                 continue;
             }
             yield [$kw => 'isuda_' . sha1($kw)];
