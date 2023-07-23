@@ -33,7 +33,7 @@ $app->get('/initialize', function (Request $req, Response $c) {
 
 $app->get('/stars', function (Request $req, Response $c) {
     $stars = $this->dbh->select_all(
-        'SELECT * FROM star WHERE keyword = ?',
+        'SELECT user_name FROM star WHERE keyword = ?',
         $req->getParams()['keyword']
     );
 

@@ -248,7 +248,7 @@ $app->get('/login', function (Request $req, Response $c) {
 $app->post('/login', function (Request $req, Response $c) {
     $name = $req->getParsedBody()['name'];
     $row = $this->dbh->select_row(
-        'SELECT * FROM user'
+        'SELECT id, `password`, salt FROM user'
             . ' WHERE name = ?',
         $name
     );
@@ -275,7 +275,7 @@ $app->get('/keyword/{keyword}', function (Request $req, Response $c) {
     if ($keyword === null) return $c->withStatus(400);
 
     $entry = $this->dbh->select_row(
-        'SELECT * FROM entry'
+        'SELECT keyword, `description` FROM entry'
             . ' WHERE keyword = ?',
         $keyword
     );
@@ -295,7 +295,7 @@ $app->post('/keyword/{keyword}', function (Request $req, Response $c) {
     if ($delete === null) return $c->withStatus(400);
 
     $entry = $this->dbh->select_row(
-        'SELECT * FROM entry'
+        'SELECT COUNT(1) FROM entry'
             . ' WHERE keyword = ?',
         $keyword
     );
