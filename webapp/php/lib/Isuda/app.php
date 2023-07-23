@@ -154,16 +154,16 @@ $app->get('/', function (Request $req, Response $c) {
     $keywords = $this->dbh->select_all(
         'SELECT keyword FROM entry ORDER BY keyword_length DESC'
     );
-    //    $stars = $this->dbh->select_all(
-    //        'SELECT * FROM `isutar`.star WHERE keyword in (' . implode(',', array_column($entries, 'keyword')) . ')'
-    //    );
-    //    $starsGroupByKeyword = [];
-    //    foreach ($stars as $star) {
-    //        $starsGroupByKeyword[$star['keyword']][] = $star;
-    //    }
+    $stars = $this->dbh->select_all(
+        'SELECT * FROM `isutar`.star WHERE keyword in ("' . implode('","', array_column($entries, 'keyword')) . '")'
+    );
+    $starsGroupByKeyword = [];
+    foreach ($stars as $star) {
+        $starsGroupByKeyword[$star['keyword']][] = $star;
+    }
     foreach ($entries as &$entry) {
         $entry['html']  = $this->htmlify($entry['description'], $keywords);
-        $entry['stars'] = $this->load_stars($entry['keyword']);
+        $entry['stars'] = $starsGroupByKeyword[$entry['keyword']] ?? [];
     }
     unset($entry);
 
