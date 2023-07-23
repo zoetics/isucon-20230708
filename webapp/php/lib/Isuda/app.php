@@ -41,14 +41,14 @@ $container = new class extends \Slim\Container
         ));
     }
 
-    public function htmlify($content)
+    public function htmlify($content, $keywords = null)
     {
         if (!isset($content)) {
             return '';
         }
         if (empty($keywords)) {
             $keywords = $this->dbh->select_all(
-                'SELECT id, author_id, keyword, description, updated_at, created_at FROM entry ORDER BY keyword_length DESC'
+                'SELECT keyword FROM entry ORDER BY keyword_length DESC'
             );
         }
         $kw2sha = [];
@@ -145,7 +145,7 @@ $app->get('/', function (Request $req, Response $c) {
             "OFFSET $offset"
     );
     $keywords = $this->dbh->select_all(
-        'SELECT * FROM entry ORDER BY keyword_length DESC'
+        'SELECT keyword FROM entry ORDER BY keyword_length DESC'
     );
     //    $stars = $this->dbh->select_all(
     //        'SELECT * FROM `isutar`.star WHERE keyword in (' . implode(',', array_column($entries, 'keyword')) . ')'
