@@ -9,12 +9,12 @@ use Slim\Http\Response;
 
 $container = new class extends \Slim\Container
 {
-    public $dbh;
+    public $isutar_dbh;
     public function __construct()
     {
         parent::__construct();
 
-        $this->dbh = new PDOWrapper(new PDO(
+        $this->isutar_dbh = new PDOWrapper(new PDO(
             $_ENV['ISUTAR_DSN'],
             $_ENV['ISUTAR_DB_USER'] ?? 'isucon',
             $_ENV['ISUTAR_DB_PASSWORD'] ?? 'isucon',
@@ -25,14 +25,14 @@ $container = new class extends \Slim\Container
 $app = new \Slim\App($container);
 
 $app->get('/initialize', function (Request $req, Response $c) {
-    $this->dbh->query('TRUNCATE star');
+    $this->isutar_dbh->query('TRUNCATE star');
     return render_json($c, [
         'result' => 'ok',
     ]);
 });
 
 $app->get('/stars', function (Request $req, Response $c) {
-    $stars = $this->dbh->select_all(
+    $stars = $this->isutar_dbh->select_all(
         'SELECT * FROM star WHERE keyword = ?',
         $req->getParams()['keyword']
     );
@@ -54,7 +54,7 @@ $app->post('/stars', function (Request $req, Response $c) {
         return $c->withStatus(404);
     }
 
-    $this->dbh->query(
+    $this->isutar_dbh->query(
         'INSERT INTO star (keyword, user_name, created_at) VALUES (?, ?, NOW())',
         $keyword,
         $req->getParams()['user']
