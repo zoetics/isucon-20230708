@@ -52,26 +52,33 @@ $container = new class extends \Slim\Container
             );
         }
         $kw2sha = [];
-
-        // NOTE: avoid pcre limitation "regular expression is too large at offset"
-        for ($i = 0; !empty($kwtmp = array_slice($keywords, 500 * $i, 500)); $i++) {
-            $re = implode('|', array_map(function ($keyword) {
-                return quotemeta($keyword['keyword']);
-            }, $kwtmp));
-            preg_replace_callback("/($re)/", function ($m) use (&$kw2sha) {
-                $kw = $m[1];
-                return $kw2sha[$kw] = "isuda_" . sha1($kw);
-            }, $content);
+        foreach ($keywords as $keyword) {
+            $kw = $keyword['keyword'];
+            if (strpos( $content, $kw ) === false) {
+                continue;
+            }
+            $kw2sha[$kw] = 'isuda_' . sha1($kw);
         }
         $content = strtr($content, $kw2sha);
         $content = html_escape($content);
         foreach ($kw2sha as $kw => $hash) {
             $url = '/keyword/' . rawurlencode($kw);
-            $link = sprintf('<a href="%s">%s</a>', $url, html_escape($kw));
+            $link = '<a href="' . $url . '">' . html_escape($kw) . '</a>';
 
-            $content = preg_replace("/{$hash}/", $link, $content);
+            $content = str_replace($hash, $link, $content);
         }
         return nl2br($content, true);
+    }
+
+    public function getKw2Sha($content, $keywords)
+    {
+        foreach ($keywords as $keyword) {
+            $kw = $keyword['keyword'];
+            if (strpos( $content, $kw ) === false) {
+                continue;
+            }
+            yield [$kw => 'isuda_' . sha1($kw)];
+        }
     }
 
     public function load_stars($keyword)
