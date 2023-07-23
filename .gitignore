@@ -7,6 +7,7 @@
 .config/
 .cpanm/
 .gem/
+.gitconfig
 .local/go/
 .local/node/
 .local/perl/
@@ -26,3 +27,4 @@
 .viminfo
 .xbuild/
 bin/
+.mysql_history
