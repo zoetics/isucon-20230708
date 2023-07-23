@@ -155,7 +155,7 @@ $app->get('/', function (Request $req, Response $c) {
         'SELECT keyword FROM entry ORDER BY keyword_length DESC'
     );
     $stars = $this->dbh->select_all(
-        'SELECT * FROM `isutar`.star WHERE keyword in ("' . implode('","', array_column($entries, 'keyword')) . '")'
+        'SELECT keyword, user_name FROM `isutar`.star WHERE keyword in ("' . implode('","', array_column($entries, 'keyword')) . '")'
     );
     $starsGroupByKeyword = [];
     foreach ($stars as $star) {
