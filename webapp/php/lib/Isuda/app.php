@@ -52,13 +52,10 @@ $container = new class extends \Slim\Container
             );
         }
         $kw2sha = [];
-        foreach ($keywords as $keyword) {
-            $kw = $keyword['keyword'];
-            if (strpos( $content, $kw ) === false) {
-                continue;
-            }
-            $kw2sha[$kw] = 'isuda_' . sha1($kw);
+        foreach ($this->getKw2Sha($content, $keywords) as $kw => $hash) {
+            $kw2sha[$kw] = $hash;
         }
+        // memo: strtrへ連想配列を指定する方式でないと、一部キーワードに変換漏れが発生する（str_replaceなど）
         $content = strtr($content, $kw2sha);
         $content = html_escape($content);
         foreach ($kw2sha as $kw => $hash) {
@@ -77,7 +74,7 @@ $container = new class extends \Slim\Container
             if (strpos( $content, $kw ) === false) {
                 continue;
             }
-            yield [$kw => 'isuda_' . sha1($kw)];
+            yield $kw => 'isuda_' . sha1($kw);
         }
     }
 
