@@ -15,7 +15,7 @@ function config($key)
             'dsn'           => $_ENV['ISUDA_DSN']         ?? 'dbi:mysql:db=isuda',
             'db_user'       => $_ENV['ISUDA_DB_USER']     ?? 'isucon',
             'db_password'   => $_ENV['ISUDA_DB_PASSWORD'] ?? 'isucon',
-            'isutar_origin' => $_ENV['ISUTAR_ORIGIN']     ?? 'http://localhost:5001',
+            'isuda_origin'  => $_ENV['ISUDA_ORIGIN']      ?? 'http://localhost:5000',
             'isupam_origin' => $_ENV['ISUPAM_ORIGIN']     ?? 'http://localhost:5050',
         ];
     }
@@ -92,7 +92,7 @@ $container = new class extends \Slim\Container
     public function load_stars($keyword)
     {
         $keyword = rawurlencode($keyword);
-        $origin = config('isutar_origin');
+        $origin = config('isuda_origin');
         $url = "{$origin}/stars?keyword={$keyword}";
         $ua = new \GuzzleHttp\Client;
         $res = $ua->request('GET', $url)->getBody();
@@ -141,9 +141,6 @@ $app->get('/initialize', function (Request $req, Response $c) {
         'DELETE FROM entry WHERE id > 7101'
     );
     $this->isutar_dbh->query('TRUNCATE star');
-    $origin = config('isutar_origin');
-    $url = "$origin/initialize";
-    file_get_contents($url);
     return render_json($c, [
         'result' => 'ok',
     ]);
