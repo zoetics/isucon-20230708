@@ -1,12 +1,14 @@
 <?php
+
 namespace Isuda\Web;
 
-use Slim\Http\Request;
-use Slim\Http\Response;
 use PDO;
 use PDOWrapper;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
-function config($key) {
+function config($key)
+{
     static $conf;
     if ($conf === null) {
         $conf = [
@@ -24,20 +26,23 @@ function config($key) {
     return $conf[$key];
 }
 
-$container = new class extends \Slim\Container {
+$container = new class extends \Slim\Container
+{
     public $dbh;
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
 
         $this->dbh = new PDOWrapper(new PDO(
             $_ENV['ISUDA_DSN'],
             $_ENV['ISUDA_DB_USER'] ?? 'isucon',
             $_ENV['ISUDA_DB_PASSWORD'] ?? 'isucon',
-            [ PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4" ]
+            [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"]
         ));
     }
 
-    public function htmlify($content, $keywords = null) {
+    public function htmlify($content, $keywords = null)
+    {
         if (!isset($content)) {
             return '';
         }
@@ -50,7 +55,9 @@ $container = new class extends \Slim\Container {
 
         // NOTE: avoid pcre limitation "regular expression is too large at offset"
         for ($i = 0; !empty($kwtmp = array_slice($keywords, 500 * $i, 500)); $i++) {
-            $re = implode('|', array_map(function ($keyword) { return quotemeta($keyword['keyword']); }, $kwtmp));
+            $re = implode('|', array_map(function ($keyword) {
+                return quotemeta($keyword['keyword']);
+            }, $kwtmp));
             preg_replace_callback("/($re)/", function ($m) use (&$kw2sha) {
                 $kw = $m[1];
                 return $kw2sha[$kw] = "isuda_" . sha1($kw);
@@ -67,7 +74,8 @@ $container = new class extends \Slim\Container {
         return nl2br($content, true);
     }
 
-    public function load_stars($keyword) {
+    public function load_stars($keyword)
+    {
         $keyword = rawurlencode($keyword);
         $origin = config('isutar_origin');
         $url = "{$origin}/stars?keyword={$keyword}";
@@ -96,8 +104,9 @@ $mw['set_name'] = function ($req, $c, $next) {
     if (isset($user_id)) {
         $this->get('stash')['user_id'] = $user_id;
         $this->get('stash')['user_name'] = $this->dbh->select_one(
-            'SELECT name FROM user WHERE id = ?'
-            , $user_id);
+            'SELECT name FROM user WHERE id = ?',
+            $user_id
+        );
         if (!isset($this->get('stash')['user_name'])) {
             return $c->withStatus(403);
         }
@@ -128,28 +137,31 @@ $app->get('/', function (Request $req, Response $c) {
     $PER_PAGE = 10;
     $page = $req->getQueryParams()['page'] ?? 1;
 
-    $offset = $PER_PAGE * ($page-1);
+    $offset = $PER_PAGE * ($page - 1);
     $entries = $this->dbh->select_all(
-        'SELECT * FROM entry '.
-        'ORDER BY updated_at DESC '.
-        "LIMIT $PER_PAGE ".
-        "OFFSET $offset"
+        'SELECT * FROM entry ' .
+            'ORDER BY updated_at DESC ' .
+            "LIMIT $PER_PAGE " .
+            "OFFSET $offset"
     );
     $keywords = $this->dbh->select_all(
         'SELECT * FROM entry ORDER BY CHARACTER_LENGTH(keyword) DESC'
     );
-//    $stars = $this->dbh->select_all(
-//        'SELECT * FROM `isutar`.star WHERE keyword in (' . implode(',', array_column($entries, 'keyword')) . ')'
-//    );
-//    $starsGroupByKeyword = [];
-//    foreach ($stars as $star) {
-//        $starsGroupByKeyword[$star['keyword']][] = $star;
-//    }
+    $stars = $this->dbh->select_all(
+        'SELECT * FROM `isutar`.star WHERE keyword in ("' . implode('","', array_column($entries, 'keyword')) . '")'
+    );
+    $starsGroupByKeyword = [];
+    foreach ($stars as $star) {
+        $starsGroupByKeyword[$star['keyword']][] = $star;
+    }
+    var_dump($starsGroupByKeyword);
     foreach ($entries as &$entry) {
         $entry['html']  = $this->htmlify($entry['description'], $keywords);
-        $entry['stars'] = $this->load_stars($entry['keyword']);
+        // $entry['stars'] = $this->load_stars($entry['keyword']);
+        $entry['stars'] = $starsGroupByKeyword[$entry['keyword']];
     }
-    var_dump($entries['stars']);
+    var_dump($entries[0]);
+    var_dump($entries[0]['stars']);
 
     unset($entry);
 
@@ -157,9 +169,9 @@ $app->get('/', function (Request $req, Response $c) {
         'SELECT COUNT(*) FROM entry'
     );
     $last_page = ceil($total_entries / $PER_PAGE);
-    $pages = range(max(1, $page-5), min($last_page, $page+5));
+    $pages = range(max(1, $page - 5), min($last_page, $page + 5));
 
-    $this->view->render($c, 'index.twig', [ 'entries' => $entries, 'page' => $page, 'last_page' => $last_page, 'pages' => $pages, 'stash' => $this->get('stash') ]);
+    $this->view->render($c, 'index.twig', ['entries' => $entries, 'page' => $page, 'last_page' => $last_page, 'pages' => $pages, 'stash' => $this->get('stash')]);
 })->add($mw['set_name'])->setName('/');
 
 $app->get('/robots.txt', function (Request $req, Response $c) {
@@ -179,10 +191,16 @@ $app->post('/keyword', function (Request $req, Response $c) {
     }
     $this->dbh->query(
         'INSERT INTO entry (author_id, keyword, description, created_at, updated_at)'
-        .' VALUES (?, ?, ?, NOW(), NOW())'
-        .' ON DUPLICATE KEY UPDATE'
-        .' author_id = ?, keyword = ?, description = ?, updated_at = NOW()'
-    , $user_id, $keyword, $description, $user_id, $keyword, $description);
+            . ' VALUES (?, ?, ?, NOW(), NOW())'
+            . ' ON DUPLICATE KEY UPDATE'
+            . ' author_id = ?, keyword = ?, description = ?, updated_at = NOW()',
+        $user_id,
+        $keyword,
+        $description,
+        $user_id,
+        $keyword,
+        $description
+    );
 
     return $c->withRedirect('/');
 })->add($mw['authenticate'])->add($mw['set_name']);
@@ -205,12 +223,16 @@ $app->post('/register', function (Request $req, Response $c) {
     return $c->withRedirect('/');
 });
 
-function register($dbh, $user, $pass) {
+function register($dbh, $user, $pass)
+{
     $salt = random_string('....................');
     $dbh->query(
         'INSERT INTO user (name, salt, password, created_at)'
-        .' VALUES (?, ?, ?, NOW())'
-    , $user, $salt, sha1($salt . $pass));
+            . ' VALUES (?, ?, ?, NOW())',
+        $user,
+        $salt,
+        sha1($salt . $pass)
+    );
 
     return $dbh->last_insert_id();
 }
@@ -225,9 +247,10 @@ $app->post('/login', function (Request $req, Response $c) {
     $name = $req->getParsedBody()['name'];
     $row = $this->dbh->select_row(
         'SELECT * FROM user'
-        . ' WHERE name = ?'
-    , $name);
-    if (!$row || $row['password'] !== sha1($row['salt'].$req->getParsedBody()['password'])) {
+            . ' WHERE name = ?',
+        $name
+    );
+    if (!$row || $row['password'] !== sha1($row['salt'] . $req->getParsedBody()['password'])) {
         return $c->withStatus(403);
     }
 
@@ -239,7 +262,7 @@ $app->get('/logout', function (Request $req, Response $c) {
     $_SESSION = [];
     if (ini_get('session.use_cookies')) {
         $p = session_get_cookie_params();
-        setcookie(session_name(), '', time()-60, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+        setcookie(session_name(), '', time() - 60, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
     }
     session_destroy();
     return $c->withRedirect('/');
@@ -251,8 +274,9 @@ $app->get('/keyword/{keyword}', function (Request $req, Response $c) {
 
     $entry = $this->dbh->select_row(
         'SELECT * FROM entry'
-        .' WHERE keyword = ?'
-    , $keyword);
+            . ' WHERE keyword = ?',
+        $keyword
+    );
     if (empty($entry)) return $c->withStatus(404);
     $entry['html'] = $this->htmlify($entry['description']);
     $entry['stars'] = $this->load_stars($entry['keyword']);
@@ -270,15 +294,17 @@ $app->post('/keyword/{keyword}', function (Request $req, Response $c) {
 
     $entry = $this->dbh->select_row(
         'SELECT * FROM entry'
-        .' WHERE keyword = ?'
-    , $keyword);
+            . ' WHERE keyword = ?',
+        $keyword
+    );
     if (empty($entry)) return $c->withStatus(404);
 
     $this->dbh->query('DELETE FROM entry WHERE keyword = ?', $keyword);
     return $c->withRedirect('/');
 })->add($mw['authenticate'])->add($mw['set_name']);
 
-function is_spam_contents($content) {
+function is_spam_contents($content)
+{
     $ua = new \GuzzleHttp\Client;
     $res = $ua->request('POST', config('isupam_origin'), [
         'form_params' => ['content' => $content]
