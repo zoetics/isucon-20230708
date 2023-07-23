@@ -29,6 +29,7 @@ function config($key)
 $container = new class extends \Slim\Container
 {
     public $dbh;
+    public $isutar_dbh;
     public function __construct()
     {
         parent::__construct();
@@ -37,6 +38,13 @@ $container = new class extends \Slim\Container
             $_ENV['ISUDA_DSN'],
             $_ENV['ISUDA_DB_USER'] ?? 'isucon',
             $_ENV['ISUDA_DB_PASSWORD'] ?? 'isucon',
+            [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"]
+        ));
+
+        $this->isutar_dbh = new PDOWrapper(new PDO(
+            $_ENV['ISUTAR_DSN'],
+            $_ENV['ISUTAR_DB_USER'] ?? 'isucon',
+            $_ENV['ISUTAR_DB_PASSWORD'] ?? 'isucon',
             [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"]
         ));
     }
@@ -132,6 +140,7 @@ $app->get('/initialize', function (Request $req, Response $c) {
     $this->dbh->query(
         'DELETE FROM entry WHERE id > 7101'
     );
+    $this->isutar_dbh->query('TRUNCATE star');
     $origin = config('isutar_origin');
     $url = "$origin/initialize";
     file_get_contents($url);
@@ -304,6 +313,39 @@ $app->post('/keyword/{keyword}', function (Request $req, Response $c) {
     $this->dbh->query('DELETE FROM entry WHERE keyword = ?', $keyword);
     return $c->withRedirect('/');
 })->add($mw['authenticate'])->add($mw['set_name']);
+
+$app->get('/stars', function (Request $req, Response $c) {
+    $stars = $this->isutar_dbh->select_all(
+        'SELECT * FROM star WHERE keyword = ?',
+        $req->getParams()['keyword']
+    );
+
+    return render_json($c, [
+        'stars' => $stars,
+    ]);
+});
+
+$app->post('/stars', function (Request $req, Response $c) {
+    $keyword = $req->getParams()['keyword'];
+
+    $origin = $_ENV['ISUDA_ORIGIN'] ?? 'http://localhost:5000';
+    $url = "$origin/keyword/" . rawurlencode($keyword);
+    $ua = new \GuzzleHttp\Client;
+    try {
+        $res = $ua->request('GET', $url)->getBody();
+    } catch (\Exception $e) {
+        return $c->withStatus(404);
+    }
+
+    $this->isutar_dbh->query(
+        'INSERT INTO star (keyword, user_name, created_at) VALUES (?, ?, NOW())',
+        $keyword,
+        $req->getParams()['user']
+    );
+    return render_json($c, [
+        'result' => 'ok',
+    ]);
+});
 
 function is_spam_contents($content)
 {
