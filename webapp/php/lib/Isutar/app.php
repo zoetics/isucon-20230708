@@ -1,21 +1,24 @@
 <?php
+
 namespace Isutar\Web;
 
-use Slim\Http\Request;
-use Slim\Http\Response;
 use PDO;
 use PDOWrapper;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
-$container = new class extends \Slim\Container {
+$container = new class extends \Slim\Container
+{
     public $dbh;
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
 
         $this->dbh = new PDOWrapper(new PDO(
             $_ENV['ISUTAR_DSN'],
             $_ENV['ISUTAR_DB_USER'] ?? 'isucon',
             $_ENV['ISUTAR_DB_PASSWORD'] ?? 'isucon',
-            [ PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4" ]
+            [PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4"]
         ));
     }
 };
@@ -30,8 +33,9 @@ $app->get('/initialize', function (Request $req, Response $c) {
 
 $app->get('/stars', function (Request $req, Response $c) {
     $stars = $this->dbh->select_all(
-        'SELECT * FROM star WHERE keyword = ?'
-    , $req->getParams()['keyword']);
+        'SELECT * FROM star WHERE keyword = ?',
+        $req->getParams()['keyword']
+    );
 
     return render_json($c, [
         'stars' => $stars,
