@@ -6,5 +6,4 @@ systemctl restart isuda.php.service isutar.php.service nginx.service mysql.servi
 echo '' > /var/log/nginx/error.log && echo '' > /var/log/nginx/access.log && echo '' > /home/isucon/.local/php/var/log/isuda.php-fpm.log && echo '' > /home/isucon/.local/php/var/log/isutar.php-fpm.log
 
 # ベンチ実行
-sudo su - l isucon
-cd isucon6q/ && ./isucon6q-bench
+su isucon -c 'cd isucon6q/ && ./isucon6q-bench'
