@@ -54,7 +54,7 @@ $container = new class extends \Slim\Container
         $kw2sha = [];
         foreach ($keywords as $keyword) {
             $kw = $keyword['keyword'];
-            if (strpos( $content, $kw ) === false) {
+            if (strpos($content, $kw) === false) {
                 continue;
             }
             $kw2sha[$kw] = 'isuda_' . sha1($kw);
@@ -74,7 +74,7 @@ $container = new class extends \Slim\Container
     {
         foreach ($keywords as $keyword) {
             $kw = $keyword['keyword'];
-            if (strpos( $content, $kw ) === false) {
+            if (strpos($content, $kw) === false) {
                 continue;
             }
             yield [$kw => 'isuda_' . sha1($kw)];
@@ -154,16 +154,16 @@ $app->get('/', function (Request $req, Response $c) {
     $keywords = $this->dbh->select_all(
         'SELECT keyword FROM entry ORDER BY keyword_length DESC'
     );
-    //    $stars = $this->dbh->select_all(
-    //        'SELECT * FROM `isutar`.star WHERE keyword in (' . implode(',', array_column($entries, 'keyword')) . ')'
-    //    );
-    //    $starsGroupByKeyword = [];
-    //    foreach ($stars as $star) {
-    //        $starsGroupByKeyword[$star['keyword']][] = $star;
-    //    }
+    $stars = $this->dbh->select_all(
+        'SELECT keyword, user_name FROM `isutar`.star WHERE keyword in ("' . implode('","', array_column($entries, 'keyword')) . '")'
+    );
+    $starsGroupByKeyword = [];
+    foreach ($stars as $star) {
+        $starsGroupByKeyword[$star['keyword']][] = $star;
+    }
     foreach ($entries as &$entry) {
         $entry['html']  = $this->htmlify($entry['description'], $keywords);
-        $entry['stars'] = $this->load_stars($entry['keyword']);
+        $entry['stars'] = $starsGroupByKeyword[$entry['keyword']] ?? [];
     }
     unset($entry);
 
